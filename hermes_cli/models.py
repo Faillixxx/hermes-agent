@@ -277,18 +277,25 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     ],
     "xai": _xai_curated_models(),
     "nvidia": [
-        # NVIDIA flagship reasoning models
-        "nvidia/nemotron-3-super-120b-a12b",
+        # Curated free NVIDIA NIM models. Every id below is verified against the
+        # live build.nvidia.com gateway (GET /v1/models) AND flagged free
+        # (cost.input == 0) on models.dev, and supports tool calling. Removed the
+        # earlier entries that were priced (nemotron-3-super), not on the gateway
+        # (deepseek-v3.2), or had wrong ids (minimax-m2.5 -> m2.7, glm5 -> glm-5.1).
+        # NVIDIA-native
         "nvidia/nemotron-3-nano-30b-a3b",
-        "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "nvidia/nvidia-nemotron-nano-9b-v2",
         # Third-party agentic models hosted on build.nvidia.com
-        # (map to OpenRouter defaults — users get familiar picks on NIM)
         "qwen/qwen3.5-397b-a17b",
-        "deepseek-ai/deepseek-v3.2",
-        "moonshotai/kimi-k2.6",
-        "minimaxai/minimax-m2.5",
-        "z-ai/glm5",
+        "qwen/qwen3-next-80b-a3b-instruct",
+        "meta/llama-3.3-70b-instruct",
+        "meta/llama-4-maverick-17b-128e-instruct",
         "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "moonshotai/kimi-k2.6",
+        "z-ai/glm-5.1",
+        "minimaxai/minimax-m2.7",
+        "mistralai/mistral-large-3-675b-instruct-2512",
     ],
     "kimi-coding": [
         "kimi-k2.7-code",
