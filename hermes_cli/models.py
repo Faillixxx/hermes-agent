@@ -1295,6 +1295,24 @@ def _openrouter_model_is_free(pricing: Any) -> bool:
         return False
 
 
+# Free NVIDIA NIM *preview* endpoints (build.nvidia.com, nimType=nim_type_preview).
+# Display-only: the "free" tag lands in the menu description, NEVER in the model
+# id -- normalize_opencode_model_id()/routing stay byte-identical. Maintain here
+# as NVIDIA promotes/retires preview endpoints.
+NVIDIA_FREE_PREVIEW_MODELS: frozenset[str] = frozenset({
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-nano-30b-a3b",
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+})
+
+
+def _nvidia_preview_desc(provider: str, model_id: str) -> str:
+    """Return 'free' for free NVIDIA preview endpoints, else ''."""
+    if normalize_provider(provider) == "nvidia" and model_id in NVIDIA_FREE_PREVIEW_MODELS:
+        return "free"
+    return ""
+
+
 def _openrouter_model_supports_tools(item: Any) -> bool:
     """Return True when the model's ``supported_parameters`` advertise tool calling.
 
@@ -1749,11 +1767,11 @@ def curated_models_for_provider(
     # Try live API first (Codex, Nous, etc. all support /models)
     live = provider_model_ids(normalized)
     if live:
-        return [(m, "") for m in live]
+        return [(m, _nvidia_preview_desc(normalized, m)) for m in live]
 
     # Fallback to static catalog
     models = _PROVIDER_MODELS.get(normalized, [])
-    return [(m, "") for m in models]
+    return [(m, _nvidia_preview_desc(normalized, m)) for m in models]
 
 
 def _provider_keys(provider: str) -> set[str]:
