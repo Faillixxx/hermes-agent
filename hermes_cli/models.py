@@ -1295,20 +1295,24 @@ def _openrouter_model_is_free(pricing: Any) -> bool:
         return False
 
 
-# Free NVIDIA NIM *preview* endpoints (build.nvidia.com, nimType=nim_type_preview).
-# Display-only: the "free" tag lands in the menu description, NEVER in the model
-# id -- normalize_opencode_model_id()/routing stay byte-identical. Maintain here
-# as NVIDIA promotes/retires preview endpoints.
-NVIDIA_FREE_PREVIEW_MODELS: frozenset[str] = frozenset({
+# NVIDIA models hosted on build.nvidia.com that are NOT free preview endpoints
+# (production-priced, cost.input > 0). Everything else under the nvidia provider
+# is a free preview NIM, so we denylist the priced flagships rather than trying to
+# enumerate the ~80 free ones. Verified against models.dev cost data; maintain as
+# NVIDIA changes pricing. Display-only: the "free" tag lands in the menu
+# description, NEVER in the model id -- normalize_opencode_model_id()/routing stay
+# byte-identical.
+NVIDIA_PAID_MODELS: frozenset[str] = frozenset({
     "nvidia/nemotron-3-super-120b-a12b",
-    "nvidia/nemotron-3-nano-30b-a3b",
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-pro",
 })
 
 
 def _nvidia_preview_desc(provider: str, model_id: str) -> str:
     """Return 'free' for free NVIDIA preview endpoints, else ''."""
-    if normalize_provider(provider) == "nvidia" and model_id in NVIDIA_FREE_PREVIEW_MODELS:
+    if normalize_provider(provider) == "nvidia" and model_id not in NVIDIA_PAID_MODELS:
         return "free"
     return ""
 
