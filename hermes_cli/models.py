@@ -277,18 +277,25 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     ],
     "xai": _xai_curated_models(),
     "nvidia": [
-        # NVIDIA flagship reasoning models
-        "nvidia/nemotron-3-super-120b-a12b",
+        # Curated free NVIDIA NIM models. Every id below is verified against the
+        # live build.nvidia.com gateway (GET /v1/models) AND flagged free
+        # (cost.input == 0) on models.dev, and supports tool calling. Removed the
+        # earlier entries that were priced (nemotron-3-super), not on the gateway
+        # (deepseek-v3.2), or had wrong ids (minimax-m2.5 -> m2.7, glm5 -> glm-5.1).
+        # NVIDIA-native
         "nvidia/nemotron-3-nano-30b-a3b",
-        "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "nvidia/nvidia-nemotron-nano-9b-v2",
         # Third-party agentic models hosted on build.nvidia.com
-        # (map to OpenRouter defaults — users get familiar picks on NIM)
         "qwen/qwen3.5-397b-a17b",
-        "deepseek-ai/deepseek-v3.2",
-        "moonshotai/kimi-k2.6",
-        "minimaxai/minimax-m2.5",
-        "z-ai/glm5",
+        "qwen/qwen3-next-80b-a3b-instruct",
+        "meta/llama-3.3-70b-instruct",
+        "meta/llama-4-maverick-17b-128e-instruct",
         "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "moonshotai/kimi-k2.6",
+        "z-ai/glm-5.1",
+        "minimaxai/minimax-m2.7",
+        "mistralai/mistral-large-3-675b-instruct-2512",
     ],
     "kimi-coding": [
         "kimi-k2.7-code",
@@ -1295,6 +1302,28 @@ def _openrouter_model_is_free(pricing: Any) -> bool:
         return False
 
 
+# NVIDIA models hosted on build.nvidia.com that are NOT free preview endpoints
+# (production-priced, cost.input > 0). Everything else under the nvidia provider
+# is a free preview NIM, so we denylist the priced flagships rather than trying to
+# enumerate the ~80 free ones. Verified against models.dev cost data; maintain as
+# NVIDIA changes pricing. Display-only: the "free" tag lands in the menu
+# description, NEVER in the model id -- normalize_opencode_model_id()/routing stay
+# byte-identical.
+NVIDIA_PAID_MODELS: frozenset[str] = frozenset({
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "deepseek-ai/deepseek-v4-flash",
+    "deepseek-ai/deepseek-v4-pro",
+})
+
+
+def _nvidia_preview_desc(provider: str, model_id: str) -> str:
+    """Return 'free' for free NVIDIA preview endpoints, else ''."""
+    if normalize_provider(provider) == "nvidia" and model_id not in NVIDIA_PAID_MODELS:
+        return "free"
+    return ""
+
+
 def _openrouter_model_supports_tools(item: Any) -> bool:
     """Return True when the model's ``supported_parameters`` advertise tool calling.
 
@@ -1749,11 +1778,11 @@ def curated_models_for_provider(
     # Try live API first (Codex, Nous, etc. all support /models)
     live = provider_model_ids(normalized)
     if live:
-        return [(m, "") for m in live]
+        return [(m, _nvidia_preview_desc(normalized, m)) for m in live]
 
     # Fallback to static catalog
     models = _PROVIDER_MODELS.get(normalized, [])
-    return [(m, "") for m in models]
+    return [(m, _nvidia_preview_desc(normalized, m)) for m in models]
 
 
 def _provider_keys(provider: str) -> set[str]:
